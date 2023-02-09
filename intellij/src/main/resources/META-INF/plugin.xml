@@ -81,7 +81,8 @@
                                         implementationClass="motif.intellij.provider.ScopeNavigationLineMarkerProvider"/>
         <codeInsight.lineMarkerProvider language="JAVA"
                                         implementationClass="motif.intellij.provider.ScopeHierarchyLineMarkerProvider"/>
-        <!-- TODO: Add kotlin support to ScopeHierarchyLineMarkerProvider -->
+        <codeInsight.lineMarkerProvider language="kotlin"
+                                        implementationClass="motif.intellij.provider.ScopeHierarchyLineMarkerProvider"/>
     </extensions>
 
     <extensionPoints>

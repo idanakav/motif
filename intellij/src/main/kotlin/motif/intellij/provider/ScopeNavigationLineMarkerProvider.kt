@@ -15,159 +15,87 @@
  */
 package motif.intellij.provider
 
-import com.intellij.codeHighlighting.Pass.UPDATE_ALL
-import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
-import com.intellij.openapi.ui.popup.JBPopupFactory
-import com.intellij.openapi.ui.popup.ListPopup
-import com.intellij.openapi.ui.popup.PopupStep
-import com.intellij.openapi.ui.popup.util.BaseListPopupStep
-import com.intellij.pom.Navigatable
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
-import com.intellij.psi.PsiMethod
-import com.intellij.psi.impl.source.PsiClassReferenceType
-import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.ui.awt.RelativePoint
-import com.intellij.util.ConstantFunction
-import java.awt.event.MouseEvent
-import motif.ast.intellij.IntelliJClass
 import motif.core.ResolvedGraph
 import motif.core.ScopeEdge
 import motif.intellij.MotifService
 import motif.intellij.ScopeHierarchyUtils.Companion.getParentScopes
 import motif.intellij.ScopeHierarchyUtils.Companion.isMotifChildScopeMethod
 import motif.intellij.ScopeHierarchyUtils.Companion.isMotifScopeClass
-import motif.intellij.analytics.AnalyticsService
-import motif.intellij.analytics.MotifAnalyticsActions
 import motif.intellij.toPsiClass
-import motif.intellij.toPsiMethod
+import org.jetbrains.kotlin.asJava.toLightMethods
+import org.jetbrains.kotlin.idea.highlighter.markers.LineMarkerInfos
 
 /*
  * {@LineMarkerProvider} used to display navigation icons in gutter to navigate to parent/children of Motif scopes.
  */
 class ScopeNavigationLineMarkerProvider : LineMarkerProvider, MotifService.Listener {
 
-  companion object {
-    const val LABEL_NAVIGATE_PARENT_SCOPE: String = "Navigate to parent Scope."
-    const val LABEL_NAVIGATE_CHILD_SCOPE: String = "Navigate to child Scope."
-    const val MESSAGE_NAVIGATION_NO_SCOPE: String =
-        "Provided class doesn't have a corresponding Motif scope. Please refresh graph manually and try again."
-    const val MESSAGE_NAVIGATION_PARENT_ROOT: String =
-        "Can't navigate to parent scope because scope is a root scope."
-    const val MESSAGE_TITLE: String = "Motif"
-  }
-
-  private var graph: ResolvedGraph? = null
-
-  override fun onGraphUpdated(graph: ResolvedGraph) {
-    this.graph = graph
-  }
-
-  override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<PsiElement>? {
-    val graph: ResolvedGraph = graph ?: return null
-    val psiClassElement = element.toPsiClass()
-    if (psiClassElement is PsiClass && isMotifScopeClass(psiClassElement)) {
-      val scopeEdges: Array<ScopeEdge>? = getParentScopes(element.project, graph, psiClassElement)
-      if (scopeEdges?.isNotEmpty() == true) {
-        val identifier: PsiIdentifier = psiClassElement.nameIdentifier ?: return null
-        return LineMarkerInfo(
-            element,
-            identifier.textRange,
-            AllIcons.Actions.PreviousOccurence,
-            UPDATE_ALL,
-            ConstantFunction<PsiElement, String>(LABEL_NAVIGATE_PARENT_SCOPE),
-            NavigationScopeHandler(element.project, graph),
-            LEFT)
-      }
-    } else {
-      val methodElement = element.toPsiMethod()
-      if (isMotifChildScopeMethod(methodElement)) {
-        return LineMarkerInfo(
-            element,
-            element.textRange,
-            AllIcons.Actions.NextOccurence,
-            UPDATE_ALL,
-            ConstantFunction<PsiElement, String>(LABEL_NAVIGATE_CHILD_SCOPE),
-            NavigationScopeHandler(element.project, graph),
-            LEFT)
-      }
+    companion object {
+        const val LABEL_NAVIGATE_PARENT_SCOPE: String = "Navigate to parent Scope"
+        const val LABEL_NAVIGATE_CHILD_SCOPE: String = "Navigate to child Scope"
+        const val MESSAGE_NAVIGATION_NO_SCOPE: String =
+                "Provided class doesn't have a corresponding Motif scope. Please refresh graph manually and try again."
+        const val MESSAGE_NAVIGATION_PARENT_ROOT: String =
+                "Can't navigate to parent scope because scope is a root scope."
+        const val MESSAGE_TITLE: String = "Motif"
     }
-    return null
-  }
 
-  private class NavigationScopeHandler(val project: Project, val graph: ResolvedGraph) :
-      GutterIconNavigationHandler<PsiElement> {
-      val analyticsService = project.service<AnalyticsService>()
-    override fun navigate(event: MouseEvent?, element: PsiElement?) {
-      val psiClassElement = element?.toPsiClass()
-      if (psiClassElement is PsiClass) {
-        val scopeEdges: Array<ScopeEdge>? =
-            getParentScopes(psiClassElement.project, graph, psiClassElement)
-        if (scopeEdges == null) {
-          Messages.showInfoMessage(MESSAGE_NAVIGATION_NO_SCOPE, MESSAGE_TITLE)
-          return
-        }
-        when (scopeEdges.size) {
-          0 -> Messages.showInfoMessage(MESSAGE_NAVIGATION_PARENT_ROOT, MESSAGE_TITLE)
-          1 -> navigateToParent(scopeEdges[0])
-          else -> {
-            val mouseEvent: MouseEvent = event ?: return
-            val listPopup: ListPopup =
-                JBPopupFactory.getInstance()
-                    .createListPopup(
-                        object :
-                            BaseListPopupStep<ScopeEdge>(
-                                "Select Parent Scope", scopeEdges.toMutableList()) {
-                          override fun getTextFor(value: ScopeEdge): String {
-                            return value.parent.clazz.simpleName
-                          }
+    private var graph: ResolvedGraph? = null
 
-                          override fun onChosen(
-                              selectedValue: ScopeEdge?,
-                              finalChoice: Boolean
-                          ): PopupStep<*>? {
-                            selectedValue?.let { navigateToParent(it) }
-                            return super.onChosen(selectedValue, finalChoice)
-                          }
-                        })
-            listPopup.show(RelativePoint(mouseEvent))
-          }
-        }
-      } else {
-        val methodElement = element?.toPsiMethod()
-        if (methodElement is PsiMethod) {
-          val classElement = PsiTreeUtil.getParentOfType(methodElement, PsiClass::class.java)
-          if (isMotifScopeClass(classElement) &&
-              methodElement.returnType is PsiClassReferenceType) {
-            val returnElementClass: PsiClass? =
-                (methodElement.returnType as PsiClassReferenceType).resolve()
-            returnElementClass?.let {
-              val navigationElement = it.navigationElement
-              if (navigationElement is Navigatable &&
-                  (navigationElement as Navigatable).canNavigate()) {
-                navigationElement.navigate(true)
-              }
+    override fun onGraphUpdated(graph: ResolvedGraph) {
+        this.graph = graph
+    }
+
+    override fun collectSlowLineMarkers(elements: List<PsiElement>, result: LineMarkerInfos) {
+        val graph: ResolvedGraph = graph ?: return
+
+        for (element in elements) {
+            ProgressManager.checkCanceled()
+
+            if (isMotifScopeClass(element)) {
+                val psiClass = element.toPsiClass()
+                if (psiClass !is PsiClass) continue
+                val scopeEdges: Array<ScopeEdge>? = getParentScopes(element.project, graph, psiClass)
+                if (scopeEdges.isNullOrEmpty()) continue
+
+                val identifier: PsiIdentifier = psiClass.nameIdentifier ?: continue
+                result.add(
+                        LineMarkerInfo(
+                                identifier,
+                                identifier.textRange,
+                                AllIcons.Actions.PreviousOccurence,
+                                { LABEL_NAVIGATE_PARENT_SCOPE },
+                                ScopeClassNavigationHandler(element.project, graph),
+                                LEFT,
+                                { LABEL_NAVIGATE_PARENT_SCOPE }
+                        )
+                )
+            } else if (isMotifChildScopeMethod(element)) {
+                val identifier: PsiIdentifier = element.toLightMethods().firstOrNull()?.nameIdentifier ?: continue
+                result.add(
+                        LineMarkerInfo(
+                                identifier,
+                                identifier.textRange,
+                                AllIcons.Actions.NextOccurence,
+                                { LABEL_NAVIGATE_CHILD_SCOPE },
+                                ScopeMethodNavigationHandler(element.project, graph),
+                                LEFT,
+                                { LABEL_NAVIGATE_CHILD_SCOPE }
+                        )
+                )
             }
-          }
         }
-      }
-        analyticsService.logEvent(MotifAnalyticsActions.NAVIGATION_GUTTER_CLICK)
     }
 
-    private fun navigateToParent(scopeEdge: ScopeEdge) {
-      val navigationElement: PsiElement =
-          (scopeEdge.parent.clazz as IntelliJClass).psiClass.navigationElement
-      if (navigationElement is Navigatable && (navigationElement as Navigatable).canNavigate()) {
-        navigationElement.navigate(true)
-      }
+    override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<PsiElement>? {
+        return null
     }
-  }
 }

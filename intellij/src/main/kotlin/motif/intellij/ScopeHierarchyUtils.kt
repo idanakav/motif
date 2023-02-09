@@ -36,6 +36,13 @@ import motif.models.Scope
 import motif.models.ScopeSource
 import motif.models.Sink
 import motif.models.Source
+import org.jetbrains.kotlin.asJava.LightClassUtil
+import org.jetbrains.kotlin.idea.util.findAnnotation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtFunction
+
+private val MOTIF_ANNOTATION_FQNAME = FqName(motif.Scope::class.java.name)
 
 class ScopeHierarchyUtils {
 
@@ -91,22 +98,28 @@ class ScopeHierarchyUtils {
       return graph.roots.isNotEmpty()
     }
 
-    fun isMotifScopeClass(element: PsiClass?): Boolean {
-      return element?.hasAnnotation(motif.Scope::class.java.name) ?: false
+    fun isMotifScopeClass(element: PsiElement?): Boolean {
+      return when(element) {
+        is KtClass -> element.findAnnotation(MOTIF_ANNOTATION_FQNAME) != null
+        is PsiClass -> element.hasAnnotation(MOTIF_ANNOTATION_FQNAME.asString())
+        else -> false
+      }
     }
 
     fun isMotifChildScopeMethod(element: PsiElement?): Boolean {
-      if (element is PsiMethod) {
-        val classElement = PsiTreeUtil.getParentOfType(element, PsiClass::class.java)
-        if (isMotifScopeClass(classElement) && element.returnType is PsiClassReferenceType) {
-          val returnElementClass: PsiClass? =
-              (element.returnType as PsiClassReferenceType).resolve()
-          if (isMotifScopeClass(returnElementClass)) {
-            return true
-          }
+      return when(element) {
+        is PsiMethod -> {
+          val classElement = PsiTreeUtil.getParentOfType(element, PsiClass::class.java)
+          val returnType = element.returnType as? PsiClassReferenceType ?: return false
+          isMotifScopeClass(classElement) && isMotifScopeClass(returnType.resolve())
         }
+        is KtFunction -> {
+          val classElement = PsiTreeUtil.getParentOfType(element, KtClass::class.java)
+          val returnType = LightClassUtil.getLightClassMethod(element)?.returnType as? PsiClassReferenceType ?: return false
+          isMotifScopeClass(classElement) && isMotifScopeClass(returnType.resolve())
+        }
+        else -> false
       }
-      return false
     }
 
     fun getParentScopes(
