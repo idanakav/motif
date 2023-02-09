@@ -15,6 +15,7 @@
  */
 package motif.intellij
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
@@ -43,7 +44,7 @@ class GraphFactory(private val project: Project) {
 
   private fun getScopeClasses(): List<IrClass> {
     val scopeClasses = mutableListOf<IrClass>()
-    ProjectFileIndex.SERVICE.getInstance(project).iterateContent { file ->
+    project.service<ProjectFileIndex>().iterateContent { file ->
       scopeClasses.addAll(getScopeClasses(file))
       true
     }

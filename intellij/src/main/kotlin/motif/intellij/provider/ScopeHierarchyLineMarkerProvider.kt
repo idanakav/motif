@@ -20,6 +20,7 @@ import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
@@ -32,17 +33,17 @@ import com.intellij.psi.impl.source.PsiClassReferenceType
 import com.intellij.util.ConstantFunction
 import java.awt.event.MouseEvent
 import motif.core.ResolvedGraph
-import motif.intellij.MotifProjectComponent
-import motif.intellij.MotifProjectComponent.Companion.TOOL_WINDOW_ID
+import motif.intellij.MotifService
+import motif.intellij.MotifService.Companion.TOOL_WINDOW_ID
 import motif.intellij.ScopeHierarchyUtils.Companion.getParentScopes
 import motif.intellij.ScopeHierarchyUtils.Companion.isMotifScopeClass
-import motif.intellij.analytics.AnalyticsProjectComponent
+import motif.intellij.analytics.AnalyticsService
 import motif.intellij.analytics.MotifAnalyticsActions
 
 /*
  * {@LineMarkerProvider} used to display icon in gutter to navigate to motif scope ancestors hierarchy.
  */
-class ScopeHierarchyLineMarkerProvider : LineMarkerProvider, MotifProjectComponent.Listener {
+class ScopeHierarchyLineMarkerProvider : LineMarkerProvider, MotifService.Listener {
 
   companion object {
     const val LABEL_ANCESTORS_SCOPE: String = "View Scope Ancestors."
@@ -78,24 +79,25 @@ class ScopeHierarchyLineMarkerProvider : LineMarkerProvider, MotifProjectCompone
 
   private class ScopeHierarchyHandler(val project: Project) :
       GutterIconNavigationHandler<PsiElement> {
+      private val analyticsService = project.service<AnalyticsService>()
+      private val motifService = project.service<MotifService>()
     override fun navigate(event: MouseEvent?, element: PsiElement?) {
       val toolWindow: ToolWindow =
           ToolWindowManager.getInstance(project).getToolWindow(TOOL_WINDOW_ID) ?: return
       if (element is PsiClass) {
         toolWindow.activate {
-          MotifProjectComponent.getInstance(project).onSelectedAncestorScope(element)
+            motifService.onSelectedAncestorScope(element)
         }
       } else if (element is PsiMethod) {
         if (element.returnType is PsiClassReferenceType) {
           val returnElementClass: PsiClass =
               (element.returnType as PsiClassReferenceType).resolve() ?: return
           toolWindow.activate {
-            MotifProjectComponent.getInstance(project).onSelectedAncestorScope(returnElementClass)
+              motifService.onSelectedAncestorScope(returnElementClass)
           }
         }
       }
-      AnalyticsProjectComponent.getInstance(project)
-          .logEvent(MotifAnalyticsActions.ANCESTOR_GUTTER_CLICK)
+        analyticsService.logEvent(MotifAnalyticsActions.ANCESTOR_GUTTER_CLICK)
     }
   }
 }

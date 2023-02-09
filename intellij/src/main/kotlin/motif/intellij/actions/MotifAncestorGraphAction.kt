@@ -18,23 +18,24 @@ package motif.intellij.actions
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.components.service
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import motif.core.ResolvedGraph
-import motif.intellij.MotifProjectComponent
-import motif.intellij.MotifProjectComponent.Companion.TOOL_WINDOW_ID
+import motif.intellij.MotifService
+import motif.intellij.MotifService.Companion.TOOL_WINDOW_ID
 import motif.intellij.ScopeHierarchyUtils.Companion.getParentScopes
 import motif.intellij.ScopeHierarchyUtils.Companion.isInitializedGraph
 import motif.intellij.ScopeHierarchyUtils.Companion.isMotifScopeClass
-import motif.intellij.analytics.AnalyticsProjectComponent
+import motif.intellij.analytics.AnalyticsService
 import motif.intellij.analytics.MotifAnalyticsActions
 
 /*
  * {@AnAction} used to trigger displaying a particular scope ancestors hierarchy.
  */
-class MotifAncestorGraphAction : AnAction(), MotifProjectComponent.Listener {
+class MotifAncestorGraphAction : AnAction(), MotifService.Listener {
 
   private var graph: ResolvedGraph? = null
 
@@ -46,20 +47,22 @@ class MotifAncestorGraphAction : AnAction(), MotifProjectComponent.Listener {
     val project = event.project ?: return
     val element = event.getPsiElement() ?: return
     val graph = graph ?: return
+    val motifService = project.service<MotifService>()
+    val analyticsService = project.service<AnalyticsService>()
+
 
     if (!isInitializedGraph(graph)) {
-      MotifProjectComponent.getInstance(project).refreshGraph { actionPerformed(event) }
+      motifService.refreshGraph { actionPerformed(event) }
       return
     }
 
     val toolWindow: ToolWindow =
         ToolWindowManager.getInstance(project).getToolWindow(TOOL_WINDOW_ID) ?: return
     toolWindow.activate {
-      MotifProjectComponent.getInstance(project).onSelectedAncestorScope(element)
+      motifService.onSelectedAncestorScope(element)
     }
 
-    AnalyticsProjectComponent.getInstance(project)
-        .logEvent(MotifAnalyticsActions.ANCESTOR_MENU_CLICK)
+    analyticsService.logEvent(MotifAnalyticsActions.ANCESTOR_MENU_CLICK)
   }
 
   override fun update(e: AnActionEvent) {

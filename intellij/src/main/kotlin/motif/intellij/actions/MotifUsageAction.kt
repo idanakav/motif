@@ -18,22 +18,23 @@ package motif.intellij.actions
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.components.service
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import motif.core.ResolvedGraph
-import motif.intellij.MotifProjectComponent
-import motif.intellij.MotifProjectComponent.Companion.TOOL_WINDOW_ID
+import motif.intellij.MotifService
+import motif.intellij.MotifService.Companion.TOOL_WINDOW_ID
 import motif.intellij.ScopeHierarchyUtils
 import motif.intellij.ScopeHierarchyUtils.Companion.getUsageCount
-import motif.intellij.analytics.AnalyticsProjectComponent
+import motif.intellij.analytics.AnalyticsService
 import motif.intellij.analytics.MotifAnalyticsActions
 
 /*
  * {@AnAction} used to trigger navigation to a particular scope in the scope hierarchy window.
  */
-class MotifUsageAction : AnAction(), MotifProjectComponent.Listener {
+class MotifUsageAction : AnAction(), MotifService.Listener {
 
   private var graph: ResolvedGraph? = null
 
@@ -45,17 +46,18 @@ class MotifUsageAction : AnAction(), MotifProjectComponent.Listener {
     val project = event.project ?: return
     val element = event.getPsiElement() ?: return
     val graph = graph ?: return
-
+    val motifService = project.service<MotifService>()
+    val analyticsService = project.service<AnalyticsService>()
     if (!ScopeHierarchyUtils.isInitializedGraph(graph)) {
-      MotifProjectComponent.getInstance(project).refreshGraph { actionPerformed(event) }
+      motifService.refreshGraph { actionPerformed(event) }
       return
     }
 
     val toolWindow: ToolWindow =
         ToolWindowManager.getInstance(project).getToolWindow(TOOL_WINDOW_ID) ?: return
-    toolWindow.activate { MotifProjectComponent.getInstance(project).onSelectedClass(element) }
+    toolWindow.activate { motifService.onSelectedClass(element) }
 
-    AnalyticsProjectComponent.getInstance(project).logEvent(MotifAnalyticsActions.USAGE_MENU_CLICK)
+    analyticsService.logEvent(MotifAnalyticsActions.USAGE_MENU_CLICK)
   }
 
   override fun update(e: AnActionEvent) {

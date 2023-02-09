@@ -20,6 +20,7 @@ import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -40,11 +41,11 @@ import java.awt.event.MouseEvent
 import motif.ast.intellij.IntelliJClass
 import motif.core.ResolvedGraph
 import motif.core.ScopeEdge
-import motif.intellij.MotifProjectComponent
+import motif.intellij.MotifService
 import motif.intellij.ScopeHierarchyUtils.Companion.getParentScopes
 import motif.intellij.ScopeHierarchyUtils.Companion.isMotifChildScopeMethod
 import motif.intellij.ScopeHierarchyUtils.Companion.isMotifScopeClass
-import motif.intellij.analytics.AnalyticsProjectComponent
+import motif.intellij.analytics.AnalyticsService
 import motif.intellij.analytics.MotifAnalyticsActions
 import motif.intellij.toPsiClass
 import motif.intellij.toPsiMethod
@@ -52,7 +53,7 @@ import motif.intellij.toPsiMethod
 /*
  * {@LineMarkerProvider} used to display navigation icons in gutter to navigate to parent/children of Motif scopes.
  */
-class ScopeNavigationLineMarkerProvider : LineMarkerProvider, MotifProjectComponent.Listener {
+class ScopeNavigationLineMarkerProvider : LineMarkerProvider, MotifService.Listener {
 
   companion object {
     const val LABEL_NAVIGATE_PARENT_SCOPE: String = "Navigate to parent Scope."
@@ -104,6 +105,7 @@ class ScopeNavigationLineMarkerProvider : LineMarkerProvider, MotifProjectCompon
 
   private class NavigationScopeHandler(val project: Project, val graph: ResolvedGraph) :
       GutterIconNavigationHandler<PsiElement> {
+      val analyticsService = project.service<AnalyticsService>()
     override fun navigate(event: MouseEvent?, element: PsiElement?) {
       val psiClassElement = element?.toPsiClass()
       if (psiClassElement is PsiClass) {
@@ -157,8 +159,7 @@ class ScopeNavigationLineMarkerProvider : LineMarkerProvider, MotifProjectCompon
           }
         }
       }
-      AnalyticsProjectComponent.getInstance(project)
-          .logEvent(MotifAnalyticsActions.NAVIGATION_GUTTER_CLICK)
+        analyticsService.logEvent(MotifAnalyticsActions.NAVIGATION_GUTTER_CLICK)
     }
 
     private fun navigateToParent(scopeEdge: ScopeEdge) {

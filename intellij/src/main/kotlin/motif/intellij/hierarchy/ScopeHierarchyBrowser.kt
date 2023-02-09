@@ -27,6 +27,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
@@ -42,10 +43,10 @@ import motif.ast.IrType
 import motif.ast.intellij.IntelliJClass
 import motif.ast.intellij.IntelliJType
 import motif.core.ResolvedGraph
-import motif.intellij.MotifProjectComponent
+import motif.intellij.MotifService
 import motif.intellij.ScopeHierarchyUtils
 import motif.intellij.ScopeHierarchyUtils.Companion.isMotifScopeClass
-import motif.intellij.analytics.AnalyticsProjectComponent
+import motif.intellij.analytics.AnalyticsService
 import motif.intellij.analytics.MotifAnalyticsActions
 import motif.intellij.hierarchy.descriptor.ScopeHierarchyRootDescriptor
 import motif.intellij.hierarchy.descriptor.ScopeHierarchyScopeAncestorDescriptor
@@ -60,8 +61,10 @@ class ScopeHierarchyBrowser(
     initialGraph: ResolvedGraph,
     private val rootElement: PsiElement,
     private val selectionListener: Listener?
-) : HierarchyBrowserBase(project, rootElement), MotifProjectComponent.Listener {
+) : HierarchyBrowserBase(project, rootElement), MotifService.Listener {
 
+  private val motifService = project.service<MotifService>()
+  private val analyticsService = project.service<AnalyticsService>()
   companion object {
     const val LABEL_GO_PREVIOUS_SCOPE: String = "Go to previous Scope."
     const val LABEL_GO_NEXT_SCOPE: String = "Go to next Scope"
@@ -189,12 +192,12 @@ class ScopeHierarchyBrowser(
       else -> {}
     }
 
-    MotifProjectComponent.getInstance(project).refreshGraph()
+    motifService.refreshGraph()
 
     val action: String =
         if (status == Status.INITIALIZING) MotifAnalyticsActions.GRAPH_INIT
         else MotifAnalyticsActions.GRAPH_UPDATE
-    AnalyticsProjectComponent.getInstance(project).logEvent(action)
+    analyticsService.logEvent(action)
   }
 
   /*

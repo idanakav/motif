@@ -22,7 +22,11 @@ import com.intellij.lang.java.JavaLanguage
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.ProjectComponent
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.Service.Level.PROJECT
+import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.debug
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -37,15 +41,19 @@ import com.intellij.psi.PsiElement
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import motif.core.ResolvedGraph
-import motif.intellij.analytics.AnalyticsProjectComponent
+import motif.intellij.analytics.AnalyticsService
 import motif.intellij.analytics.MotifAnalyticsActions
 import motif.intellij.ui.MotifErrorPanel
 import motif.intellij.ui.MotifScopePanel
 import motif.intellij.ui.MotifUsagePanel
 import org.jetbrains.kotlin.idea.KotlinLanguage
+import kotlin.system.measureTimeMillis
 
-class MotifProjectComponent(val project: Project) : ProjectComponent {
+@Service(PROJECT)
+class MotifService(val project: Project) {
 
+  private val analyticsService = project.service<AnalyticsService>()
+  private val logger = thisLogger()
   companion object {
     const val TOOL_WINDOW_ID: String = "Motif"
 
@@ -61,10 +69,6 @@ class MotifProjectComponent(val project: Project) : ProjectComponent {
         "Error computing Motif graph. If error persists after you rebuild your project and restart IDE, please make sure to report the issue."
 
     private val MOTIF_ACTION_IDS = listOf("motif_usage", "motif_graph", "motif_ancestor_graph")
-
-    fun getInstance(project: Project): MotifProjectComponent {
-      return project.getComponent(MotifProjectComponent::class.java)
-    }
   }
 
   private val graphFactory: GraphFactory by lazy { GraphFactory(project) }
@@ -79,19 +83,6 @@ class MotifProjectComponent(val project: Project) : ProjectComponent {
   private var isRefreshing: Boolean = false
   private var pendingAction: (() -> Unit)? = null
 
-  override fun projectOpened() {
-    DumbService.getInstance(project).runWhenSmart {
-      ApplicationManager.getApplication().runReadAction {
-        // Initialize plugin with empty graph to avoid IDE startup slowdown
-        val emptyGraph: ResolvedGraph = ResolvedGraph.create(emptyList())
-        onGraphUpdated(emptyGraph)
-
-        AnalyticsProjectComponent.getInstance(project)
-            .logEvent(MotifAnalyticsActions.PROJECT_OPENED)
-      }
-    }
-  }
-
   fun refreshGraph() {
     if (isRefreshing) {
       return
@@ -104,21 +95,23 @@ class MotifProjectComponent(val project: Project) : ProjectComponent {
               override fun run(indicator: ProgressIndicator) {
                 ApplicationManager.getApplication().runReadAction {
                   try {
-                    val updatedGraph: ResolvedGraph = graphFactory.compute()
-                    onGraphUpdated(updatedGraph)
+                    val duration = measureTimeMillis {
+                      val updatedGraph: ResolvedGraph = graphFactory.compute()
+                      onGraphUpdated(updatedGraph)
 
-                    val eventName: String =
-                        if (updatedGraph.errors.isNotEmpty())
-                            MotifAnalyticsActions.GRAPH_UPDATE_ERROR
-                        else MotifAnalyticsActions.GRAPH_UPDATE_SUCCESS
-                    AnalyticsProjectComponent.getInstance(project).logEvent(eventName)
+                      val eventName: String =
+                              if (updatedGraph.errors.isNotEmpty())
+                                MotifAnalyticsActions.GRAPH_UPDATE_ERROR
+                              else MotifAnalyticsActions.GRAPH_UPDATE_SUCCESS
+                      analyticsService.logEvent(eventName)
+                    }
+                    logger.debug { "Computed graph in ${duration}ms" }
                   } catch (t: Throwable) {
                     val emptyGraph: ResolvedGraph = ResolvedGraph.create(emptyList())
                     onGraphUpdated(emptyGraph)
 
-                    AnalyticsProjectComponent.getInstance(project)
-                        .logEvent(MotifAnalyticsActions.GRAPH_COMPUTATION_ERROR)
-                    PluginManager.getLogger().error(LABEL_GRAPH_COMPUTATION_ERROR, t)
+                    analyticsService.logEvent(MotifAnalyticsActions.GRAPH_COMPUTATION_ERROR)
+                    logger.error(LABEL_GRAPH_COMPUTATION_ERROR, t)
                   } finally {
                     isRefreshing = false
                   }
@@ -160,8 +153,8 @@ class MotifProjectComponent(val project: Project) : ProjectComponent {
     ancestorContent?.let { toolWindow.contentManager.setSelectedContent(it) }
   }
 
-  private fun onGraphUpdated(graph: ResolvedGraph) {
-    ApplicationManager.getApplication().invokeLater {
+  fun onGraphUpdated(graph: ResolvedGraph) {
+    DumbService.getInstance(project).smartInvokeLater {
       val toolWindowManager: ToolWindowManager = ToolWindowManager.getInstance(project)
       if (toolWindowManager.getToolWindow(TOOL_WINDOW_ID) == null) {
         val toolWindow: ToolWindow =

@@ -15,21 +15,19 @@
  */
 package motif.intellij.analytics
 
-import com.intellij.openapi.components.ProjectComponent
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.Service.Level.PROJECT
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import java.util.UUID
 
-class AnalyticsProjectComponent(val project: Project) : ProjectComponent {
+@Service(PROJECT)
+internal class AnalyticsService(val project: Project) {
 
   companion object {
     private val LOGGER_EXTENSION_POINT_NAME: ExtensionPointName<MotifAnalyticsLogger> =
         ExtensionPointName.create("com.uber.motif.motifAnalyticsLogger")
     private val SESSION_ID = UUID.randomUUID()
-
-    fun getInstance(project: Project): AnalyticsProjectComponent {
-      return project.getComponent(AnalyticsProjectComponent::class.java)
-    }
   }
 
   fun logEvent(action: String) {
