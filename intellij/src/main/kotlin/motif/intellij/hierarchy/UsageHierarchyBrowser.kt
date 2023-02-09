@@ -83,12 +83,12 @@ class UsageHierarchyBrowser(
     return LABEL_GO_NEXT_SCOPE
   }
 
-  override fun createLegendPanel(): JPanel? {
-    return null
+  override fun createTrees(trees: MutableMap<in String, in JTree>) {
+    trees[USAGE_HIERARCHY_TYPE] = createTree(true)
   }
 
-  override fun createTrees(trees: MutableMap<String, JTree>) {
-    trees[USAGE_HIERARCHY_TYPE] = createTree(true)
+  override fun createLegendPanel(): JPanel? {
+    return null
   }
 
   override fun getContentDisplayName(typeName: String, element: PsiElement): String? {
@@ -106,10 +106,6 @@ class UsageHierarchyBrowser(
       return ScopeHierarchyTreeStructure(project, graph, descriptor)
     }
     return null
-  }
-
-  override fun getBrowserDataKey(): String {
-    return DATA_KEY.name
   }
 
   override fun onGraphUpdated(graph: ResolvedGraph) {

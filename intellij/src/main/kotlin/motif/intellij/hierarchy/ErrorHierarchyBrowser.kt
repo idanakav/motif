@@ -88,12 +88,12 @@ class ErrorHierarchyBrowser(
     return LABEL_GO_NEXT_SCOPE
   }
 
-  override fun createLegendPanel(): JPanel? {
-    return null
+  override fun createTrees(trees: MutableMap<in String, in JTree>) {
+    trees[ERROR_HIERARCHY_TYPE] = createTree(true)
   }
 
-  override fun createTrees(trees: MutableMap<String, JTree>) {
-    trees[ERROR_HIERARCHY_TYPE] = createTree(true)
+  override fun createLegendPanel(): JPanel? {
+    return null
   }
 
   override fun configureTree(tree: Tree) {
@@ -127,10 +127,6 @@ class ErrorHierarchyBrowser(
       return ScopeHierarchyTreeStructure(project, graph, descriptor)
     }
     return null
-  }
-
-  override fun getBrowserDataKey(): String {
-    return DATA_KEY.name
   }
 
   override fun doRefresh(currentBuilderOnly: Boolean) {

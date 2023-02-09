@@ -116,12 +116,12 @@ class ScopeHierarchyBrowser(
     return null
   }
 
-  override fun createTrees(trees: MutableMap<String, JTree>) {
-    trees[TYPE_HIERARCHY_TYPE] = createTree(true)
-  }
-
   override fun getNextOccurenceActionNameImpl(): String {
     return LABEL_GO_NEXT_SCOPE
+  }
+
+  override fun createTrees(trees: MutableMap<in String, in JTree>) {
+    trees[TYPE_HIERARCHY_TYPE] = createTree(true)
   }
 
   override fun getContentDisplayName(typeName: String, element: PsiElement): String? {
@@ -162,10 +162,6 @@ class ScopeHierarchyBrowser(
       }
     }
     return null
-  }
-
-  override fun getBrowserDataKey(): String {
-    return DATA_KEY.name
   }
 
   override fun configureTree(tree: Tree) {
