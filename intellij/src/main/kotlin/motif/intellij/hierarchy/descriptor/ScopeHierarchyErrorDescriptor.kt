@@ -20,7 +20,6 @@ import com.intellij.ide.hierarchy.HierarchyNodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ui.util.CompositeAppearance
 import com.intellij.psi.PsiElement
-import javax.swing.Icon
 import motif.ast.intellij.IntelliJClass
 import motif.ast.intellij.IntelliJMethod
 import motif.ast.intellij.IntelliJMethodParameter
@@ -32,6 +31,7 @@ import motif.core.UnexposedSourceError
 import motif.core.UnsatisfiedDependencyError
 import motif.errormessage.ErrorMessage
 import motif.models.AccessMethodParameters
+import motif.models.CannotResolveType
 import motif.models.DependencyMethodWithParameters
 import motif.models.DuplicatedChildParameterSource
 import motif.models.InjectAnnotationRequired
@@ -46,11 +46,13 @@ import motif.models.NullableParameter
 import motif.models.NullableSpreadMethod
 import motif.models.ObjectsConstructorFound
 import motif.models.ObjectsFieldFound
+import motif.models.ScopeExtendsScope
 import motif.models.ScopeMustBeAnInterface
 import motif.models.UnspreadableType
 import motif.models.VoidDependenciesMethod
 import motif.models.VoidFactoryMethod
 import motif.models.VoidScopeMethod
+import javax.swing.Icon
 
 open class ScopeHierarchyErrorDescriptor(
     project: Project,
@@ -137,7 +139,13 @@ open class ScopeHierarchyErrorDescriptor(
         is AlreadySatisfiedError -> {
           (error.scope.clazz as IntelliJClass).psiClass
         }
-        else -> throw UnsupportedOperationException()
+        is CannotResolveType -> {
+          (error.scope.clazz as IntelliJClass).psiClass
+        }
+        is ScopeExtendsScope -> {
+          (error.scope.clazz as IntelliJClass).psiClass
+        }
+        else -> throw UnsupportedOperationException("Unsupported error: $error")
       }
     }
   }
