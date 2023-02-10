@@ -6,10 +6,12 @@ plugins {
     id 'org.jetbrains.dokka'
 }
 
+def ideVersion = deps.versions.gradleIntellijPlugin.ide
+
 intellij {
-    version = deps.versions.gradleIntellijPlugin.ide
+    version = ideVersion
     plugins = [ 'java', 'Kotlin' ]
-    pluginName = 'Motif Plugin'
+    pluginName = 'Motif'
     updateSinceUntilBuild = false
 }
 
@@ -40,10 +42,18 @@ tasks {
     buildSearchableOptions {
         enabled = false
     }
+
+    runPluginVerifier {
+        ideVersions = [ ideVersion ]
+    }
 }
 
+java.sourceCompatibility = JavaVersion.VERSION_11
+
 tasks.withType(KotlinCompile).configureEach {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11
+    }
 }
 
 apply plugin: 'com.vanniktech.maven.publish'

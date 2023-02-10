@@ -1,5 +1,7 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
-    id "org.jetbrains.intellij" version "1.0"
+    id "org.jetbrains.intellij" version "1.12.0"
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.dokka'
 }
@@ -7,7 +9,7 @@ plugins {
 intellij {
     version = deps.versions.gradleIntellijPlugin.ide
     plugins = [ 'java', 'Kotlin' ]
-    pluginName = 'Motif Plugin'
+    pluginName = 'Motif'
     updateSinceUntilBuild = false
 }
 
@@ -24,15 +26,11 @@ dependencies {
     testImplementation project(':intellij:testing')
 }
 
-compileKotlin {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-}
+java.sourceCompatibility = JavaVersion.VERSION_11
 
-compileTestKotlin {
+tasks.withType(KotlinCompile).configureEach {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = JavaVersion.VERSION_11
     }
 }
 

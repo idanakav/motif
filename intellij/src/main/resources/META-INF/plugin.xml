@@ -15,9 +15,10 @@
       </ul>
     ]]></description>
 
-    <idea-version since-build="223"/>
+    <idea-version since-build="221"/>
 
     <change-notes><![CDATA[
+      Release 0.0.6: IntelliJ 223 support, performance improvements.<br>
       Release 0.0.5: Add logging extension point.<br>
       Release 0.0.4: Update plugin email address.<br>
       Release 0.0.3: Minor fixes.<br>
