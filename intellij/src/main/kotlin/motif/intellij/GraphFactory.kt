@@ -35,7 +35,7 @@ import org.jetbrains.uast.toUElement
 class GraphFactory(private val project: Project) {
 
   private val psiManager = PsiManager.getInstance(project)
-  private val psiElementFactory = PsiElementFactory.SERVICE.getInstance(project)
+  private val psiElementFactory = PsiElementFactory.getInstance(project)
 
   fun compute(): ResolvedGraph {
     val scopeClasses: List<IrClass> = getScopeClasses()

@@ -32,7 +32,7 @@ class IntelliJMethodParameter(
     IntelliJType(project, substitutor.substitute(psiParameter.type))
   }
 
-  override val name: String by lazy { psiParameter.name!! }
+  override val name: String by lazy { psiParameter.name }
 
   override val annotations: List<IrAnnotation> by lazy {
     psiParameter.modifierList!!.irAnnotations(project)

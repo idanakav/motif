@@ -18,21 +18,21 @@ package motif.ast.intellij
 import com.intellij.pom.java.LanguageLevel
 import com.intellij.psi.PsiElementFactory
 import com.intellij.testFramework.LightProjectDescriptor
-import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
+import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import motif.intellij.testing.InternalJdk
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.uast.UClass
 import org.jetbrains.uast.toUElementOfType
 
-class IntelliJKotlinTest : LightCodeInsightFixtureTestCase() {
+class IntelliJKotlinTest : LightJavaCodeInsightFixtureTestCase() {
 
   lateinit var psiElementFactory: PsiElementFactory
 
   override fun setUp() {
     super.setUp()
 
-    psiElementFactory = PsiElementFactory.SERVICE.getInstance(project)
+    psiElementFactory = PsiElementFactory.getInstance(project)
   }
 
   override fun getProjectDescriptor(): LightProjectDescriptor {

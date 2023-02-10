@@ -69,8 +69,6 @@ class ScopeHierarchyBrowser(
     const val LABEL_GO_PREVIOUS_SCOPE: String = "Go to previous Scope."
     const val LABEL_GO_NEXT_SCOPE: String = "Go to next Scope"
     const val TYPE_HIERARCHY_TYPE: String = "Scopes"
-    private val DATA_KEY =
-        DataKey.create<ScopeHierarchyBrowser>(ScopeHierarchyBrowser::class.java.name)
   }
 
   enum class Status {
@@ -155,7 +153,7 @@ class ScopeHierarchyBrowser(
           myProject, graph, ScopeHierarchyRootDescriptor(myProject, graph, psiElement, status))
     } else if (psiElement is PsiClass && isMotifScopeClass(psiElement)) {
       // Display the scope ancestors hierarchy
-      val scopeType: PsiType = PsiElementFactory.SERVICE.getInstance(project).createType(psiElement)
+      val scopeType: PsiType = PsiElementFactory.getInstance(project).createType(psiElement)
       val type: IrType = IntelliJType(project, scopeType)
       graph.getScope(type)?.let { scope ->
         val clazz = (scope.clazz as IntelliJClass).psiClass
@@ -213,7 +211,7 @@ class ScopeHierarchyBrowser(
     refresh()
   }
 
-  private inner class RefreshAction internal constructor() :
+  private inner class RefreshAction() :
       com.intellij.ide.actions.RefreshAction(
           IdeBundle.message("action.refresh"),
           IdeBundle.message("action.refresh"),
@@ -228,7 +226,7 @@ class ScopeHierarchyBrowser(
     }
   }
 
-  private inner class HelpAction internal constructor() :
+  private inner class HelpAction() :
       AnAction(
           IdeBundle.message("action.help"),
           IdeBundle.message("action.help"),
@@ -243,9 +241,9 @@ class ScopeHierarchyBrowser(
     }
   }
 
-  private inner class FileAnIssueAction internal constructor() :
+  private inner class FileAnIssueAction() :
       AnAction(
-          "File an issue",
+          "File An Issue",
           "File an issue or feature request",
           AllIcons.Toolwindows.ToolWindowDebugger) {
 

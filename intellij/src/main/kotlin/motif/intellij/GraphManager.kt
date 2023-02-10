@@ -16,7 +16,8 @@
 package motif.intellij
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.ProjectComponent
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.Service.Level.PROJECT
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -24,7 +25,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementFactory
-import com.intellij.psi.util.parentsWithSelf
+import com.intellij.psi.util.parents
 import motif.ast.IrClass
 import motif.ast.IrType
 import motif.ast.intellij.IntelliJClass
@@ -47,17 +48,14 @@ sealed class GraphState {
   }
 }
 
-class GraphManager(private val project: Project) : ProjectComponent {
+@Service(PROJECT)
+class GraphManager(private val project: Project) {
 
   private val graphFactory = GraphFactory(project)
 
   private val listeners = mutableListOf<Listener>()
 
   private var graphState: GraphState = GraphState.Uninitialized
-
-  override fun initComponent() {}
-
-  override fun disposeComponent() {}
 
   fun refresh() {
     setGraphState(GraphState.Loading)
@@ -102,7 +100,7 @@ class GraphManager(private val project: Project) : ProjectComponent {
 
 class GraphInvalidator(private val project: Project, private val graph: ResolvedGraph) {
 
-  private val psiElementFactory = PsiElementFactory.SERVICE.getInstance(project)
+  private val psiElementFactory = PsiElementFactory.getInstance(project)
 
   private val relevantTypes: Set<IrType> by lazy {
     graph
@@ -119,7 +117,7 @@ class GraphInvalidator(private val project: Project, private val graph: Resolved
   }
 
   fun shouldInvalidate(changedElement: PsiElement): Boolean {
-    return (sequenceOf(changedElement) + changedElement.parentsWithSelf)
+    return (sequenceOf(changedElement) + changedElement.parents(true))
         .mapNotNull { it as? PsiClass }
         .map { psiElementFactory.createType(it) }
         .any { IntelliJType(project, it) in relevantTypes }

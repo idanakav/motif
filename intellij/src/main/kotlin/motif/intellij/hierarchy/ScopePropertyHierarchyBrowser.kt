@@ -59,7 +59,7 @@ import motif.models.Scope
 class ScopePropertyHierarchyBrowser(
     project: Project,
     initialGraph: ResolvedGraph,
-    private val rootElement: PsiElement,
+    rootElement: PsiElement,
     private val hierarchyType: PropertyHierarchyType
 ) : HierarchyBrowserBase(project, rootElement), MotifService.Listener {
 
@@ -74,9 +74,6 @@ class ScopePropertyHierarchyBrowser(
 
   companion object {
     const val PROPERTY_HIERARCHY_TYPE: String = "Properties"
-    private val DATA_KEY =
-        DataKey.create<ScopePropertyHierarchyBrowser>(
-            ScopePropertyHierarchyBrowser::class.java.name)
     private const val LABEL_NO_SCOPE: String = "No Scope is selected."
   }
 
@@ -149,7 +146,7 @@ class ScopePropertyHierarchyBrowser(
       psiElement: PsiElement
   ): HierarchyTreeStructure? {
     if (psiElement is PsiClass && isMotifScopeClass(psiElement)) {
-      val scopeType: PsiType = PsiElementFactory.SERVICE.getInstance(project).createType(psiElement)
+      val scopeType: PsiType = PsiElementFactory.getInstance(project).createType(psiElement)
       val type: IrType = IntelliJType(project, scopeType)
       val scope: Scope = graph.getScope(type) ?: return null
       return when (hierarchyType) {
@@ -183,7 +180,6 @@ class ScopePropertyHierarchyBrowser(
           ScopeHierarchySimpleDescriptor(project, graph, null, psiElement, LABEL_NO_SCOPE)
       return ScopeHierarchyTreeStructure(project, graph, descriptor)
     }
-    return null
   }
 
   override fun onGraphUpdated(graph: ResolvedGraph) {

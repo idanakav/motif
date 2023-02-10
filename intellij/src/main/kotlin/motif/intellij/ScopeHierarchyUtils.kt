@@ -127,7 +127,7 @@ class ScopeHierarchyUtils {
         graph: ResolvedGraph,
         element: PsiClass
     ): Array<ScopeEdge>? {
-      val scopeType: PsiType = PsiElementFactory.SERVICE.getInstance(project).createType(element)
+      val scopeType: PsiType = PsiElementFactory.getInstance(project).createType(element)
       val type: IrType = IntelliJType(project, scopeType)
       val scope: Scope? = graph.getScope(type)
       return if (scope != null)
@@ -153,7 +153,7 @@ class ScopeHierarchyUtils {
         includeSinks: Boolean = true
     ): Int {
       var count = 0
-      val elementType: PsiType = PsiElementFactory.SERVICE.getInstance(project).createType(clazz)
+      val elementType: PsiType = PsiElementFactory.getInstance(project).createType(clazz)
       val type: IrType = IntelliJType(project, elementType)
       if (includeSources) {
         graph.getSources(type).forEach { _ -> count++ }

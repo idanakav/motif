@@ -198,7 +198,7 @@ class ScopeHierarchyTreeStructure(
       }
       is ScopeHierarchyUsageSourcesSectionDescriptor -> {
         val elementType: PsiType =
-            PsiElementFactory.SERVICE.getInstance(project).createType(descriptor.clazz)
+            PsiElementFactory.getInstance(project).createType(descriptor.clazz)
         val type: IrType = IntelliJType(project, elementType)
         graph.getSources(type).sortedWith(SourceComparator).forEach { source ->
           descriptors.add(
@@ -207,7 +207,7 @@ class ScopeHierarchyTreeStructure(
       }
       is ScopeHierarchyUsageSinksSectionDescriptor -> {
         val elementType: PsiType =
-            PsiElementFactory.SERVICE.getInstance(project).createType(descriptor.clazz)
+            PsiElementFactory.getInstance(project).createType(descriptor.clazz)
         val type: IrType = IntelliJType(project, elementType)
         graph.getSinks(type).sortedWith(SinkComparator).forEach { sink ->
           descriptors.add(ScopeHierarchySinkDetailsDescriptor(myProject, graph, descriptor, sink))

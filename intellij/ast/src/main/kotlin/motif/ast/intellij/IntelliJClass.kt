@@ -16,7 +16,7 @@
 package motif.ast.intellij
 
 import com.intellij.lang.jvm.JvmModifier
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.psi.JvmPsiConversionHelper
 import com.intellij.psi.PsiClass
@@ -32,14 +32,14 @@ import motif.ast.IrMethod
 import motif.ast.IrModifier
 import motif.ast.IrType
 
+@Suppress("UnstableApiUsage")
 class IntelliJClass(
     private val project: Project,
     private val psiClassType: PsiClassType,
     val psiClass: PsiClass
 ) : IrUtil, IrClass {
 
-  private val jvmPsiConversionHelper =
-      ServiceManager.getService(project, JvmPsiConversionHelper::class.java)
+  private val jvmPsiConversionHelper = project.service<JvmPsiConversionHelper>()
 
   override val type: IrType by lazy { IntelliJType(project, psiClassType) }
 
@@ -62,7 +62,7 @@ class IntelliJClass(
   }
 
   override val methods: List<IrMethod> by lazy {
-    val resolverHelper = PsiResolveHelper.SERVICE.getInstance(project)
+    val resolverHelper = PsiResolveHelper.getInstance(project)
     psiClass.visibleSignatures
         .filter {
           it.method.containingClass?.qualifiedName != "java.lang.Object" &&
@@ -75,7 +75,7 @@ class IntelliJClass(
 
   override val nestedClasses: List<IrClass> by lazy {
     psiClass.allInnerClasses.map {
-      val psiClassType: PsiClassType = PsiElementFactory.SERVICE.getInstance(project).createType(it)
+      val psiClassType: PsiClassType = PsiElementFactory.getInstance(project).createType(it)
       IntelliJClass(project, psiClassType, psiClassType.resolve()!!)
     }
   }

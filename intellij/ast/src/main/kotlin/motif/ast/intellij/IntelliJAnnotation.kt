@@ -50,7 +50,7 @@ class IntelliJAnnotation(private val project: Project, private val psiAnnotation
   override val type: IrType? by lazy {
     val annotationClass = annotationClass ?: return@lazy null
     val psiClassType: PsiClassType =
-        PsiElementFactory.SERVICE.getInstance(project).createType(annotationClass)
+        PsiElementFactory.getInstance(project).createType(annotationClass)
     IntelliJType(project, psiClassType)
   }
 

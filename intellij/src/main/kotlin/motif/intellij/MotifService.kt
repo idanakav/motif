@@ -16,7 +16,6 @@
 package motif.intellij
 
 import com.intellij.codeInsight.daemon.LineMarkerProviders
-import com.intellij.ide.plugins.PluginManager
 import com.intellij.lang.Language
 import com.intellij.lang.java.JavaLanguage
 import com.intellij.openapi.actionSystem.ActionManager
@@ -159,7 +158,7 @@ class MotifService(val project: Project) {
       if (toolWindowManager.getToolWindow(TOOL_WINDOW_ID) == null) {
         val toolWindow: ToolWindow =
             toolWindowManager.registerToolWindow(TOOL_WINDOW_ID, true, ToolWindowAnchor.RIGHT)
-        toolWindow.setIcon(IconLoader.getIcon("/icons/icon.svg"))
+        toolWindow.setIcon(IconLoader.getIcon("/icons/icon.svg", MotifService::class.java.classLoader))
         toolWindow.title = TOOL_WINDOW_TITLE
 
         scopePanel = MotifScopePanel(project, graph)
@@ -205,7 +204,7 @@ class MotifService(val project: Project) {
 
   private fun createScopeContent(toolWindow: ToolWindow): Content {
     val content =
-        ContentFactory.SERVICE.getInstance().createContent(scopePanel, TAB_NAME_SCOPES, true)
+        ContentFactory.getInstance().createContent(scopePanel, TAB_NAME_SCOPES, true)
     content.isCloseable = false
     toolWindow.contentManager.addContent(content)
     return content
@@ -213,7 +212,7 @@ class MotifService(val project: Project) {
 
   private fun createErrorContent(toolWindow: ToolWindow): Content {
     val content =
-        ContentFactory.SERVICE.getInstance().createContent(errorPanel, TAB_NAME_ERRORS, true)
+        ContentFactory.getInstance().createContent(errorPanel, TAB_NAME_ERRORS, true)
     content.isCloseable = false
     toolWindow.contentManager.addContent(content)
     return content
@@ -221,7 +220,7 @@ class MotifService(val project: Project) {
 
   private fun createUsageContent(toolWindow: ToolWindow): Content {
     val content: Content =
-        ContentFactory.SERVICE.getInstance().createContent(usagePanel, TAB_NAME_USAGE, true)
+        ContentFactory.getInstance().createContent(usagePanel, TAB_NAME_USAGE, true)
     content.description = TAB_NAME_USAGE
     content.isCloseable = true
     toolWindow.contentManager.addContent(content)
@@ -230,7 +229,7 @@ class MotifService(val project: Project) {
 
   private fun createAncestorContent(toolWindow: ToolWindow): Content {
     val content: Content =
-        ContentFactory.SERVICE.getInstance().createContent(ancestorPanel, TAB_NAME_ANCESTOR, true)
+        ContentFactory.getInstance().createContent(ancestorPanel, TAB_NAME_ANCESTOR, true)
     content.description = TAB_NAME_ANCESTOR
     content.isCloseable = true
     toolWindow.contentManager.addContent(content)
