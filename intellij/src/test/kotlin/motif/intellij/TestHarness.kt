@@ -17,39 +17,34 @@ package motif.intellij
 
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
+import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.pom.java.LanguageLevel
+import com.intellij.testFramework.IdeaTestUtil
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.Parameterized
 import com.intellij.testFramework.PsiTestUtil
-import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
-import java.io.File
-import javax.annotation.Nullable
-import javax.inject.Inject
-import kotlin.reflect.KClass
+import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
+import com.intellij.util.PathUtil
 import motif.Scope
 import motif.core.ResolvedGraph
 import motif.errormessage.ErrorMessage
-import motif.intellij.testing.IntelliJRule
 import motif.intellij.testing.InternalJdk
 import motif.viewmodel.TestRenderer
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import javax.annotation.Nullable
+import javax.inject.Inject
+import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
-class TestHarness : LightCodeInsightFixtureTestCase() {
-
-  @get:Rule val rule = IntelliJRule()
+class TestHarness : LightJavaCodeInsightFixtureTestCase() {
 
   @org.junit.runners.Parameterized.Parameter(0) lateinit var testDir: File
 
-  override fun getProjectDescriptor(): LightProjectDescriptor {
-    return object : ProjectDescriptor(LanguageLevel.HIGHEST) {
-      override fun getSdk() = InternalJdk.instance
-    }
-  }
+  override fun getProjectDescriptor(): LightProjectDescriptor = PROJECT_DESCRIPTOR
 
   @Before
   public override fun setUp() {
@@ -62,11 +57,13 @@ class TestHarness : LightCodeInsightFixtureTestCase() {
 
   @After
   public override fun tearDown() {
-    super.tearDown()
+    if(myFixture != null) {
+      super.tearDown()
+    }
   }
 
   private fun addLibrary(clazz: KClass<*>) {
-    val path = clazz.java.protectionDomain.codeSource.location.path
+    val path = PathUtil.getJarPathForClass(clazz::class.java)
     val file = File(path)
     val libName = file.name
     PsiTestUtil.addLibrary(myFixture.projectDisposable, module, libName, file.parent, libName)
@@ -152,7 +149,11 @@ class TestHarness : LightCodeInsightFixtureTestCase() {
     private val SOURCE_ROOT = File("../tests/src/main/java/")
     private val TEST_CASE_ROOT = File(SOURCE_ROOT, "testcases")
     private val EXTERNAL_ROOT = File(SOURCE_ROOT, "external")
-
+    private val PROJECT_DESCRIPTOR = object : ProjectDescriptor(LanguageLevel.HIGHEST) {
+      override fun getSdk() : Sdk {
+        return InternalJdk.instance
+      }
+    }
     @Parameterized.Parameters(name = "{0}")
     @JvmStatic
     fun data(clazz: Class<*>): List<Array<Any>> {

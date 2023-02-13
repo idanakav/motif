@@ -15,10 +15,10 @@
  */
 package motif.intellij.testing
 
+import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.projectRoots.Sdk
-import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
+import com.intellij.testFramework.IdeaTestUtil
 
 object InternalJdk {
-
-  val instance: Sdk by lazy { JavaAwareProjectJdkTableImpl.getInstanceEx().internalJdk }
+    val instance: Sdk by lazy { JavaSdk.getInstance().createJdk("TEST_JDK", IdeaTestUtil.requireRealJdkHome(),false) }
 }

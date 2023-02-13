@@ -15,6 +15,7 @@
  */
 package motif.ast.intellij
 
+import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.pom.java.LanguageLevel
 import com.intellij.psi.PsiElementFactory
 import com.intellij.testFramework.LightProjectDescriptor
@@ -33,11 +34,7 @@ class IntelliJAnnotationTest : LightJavaCodeInsightFixtureTestCase() {
     psiElementFactory = PsiElementFactory.getInstance(project)
   }
 
-  override fun getProjectDescriptor(): LightProjectDescriptor {
-    return object : ProjectDescriptor(LanguageLevel.HIGHEST) {
-      override fun getSdk() = InternalJdk.instance
-    }
-  }
+  override fun getProjectDescriptor(): LightProjectDescriptor = PROJECT_DESCRIPTOR
 
   override fun getTestDataPath(): String {
     return "testData"
@@ -298,4 +295,11 @@ class IntelliJAnnotationTest : LightJavaCodeInsightFixtureTestCase() {
     val psiAnnotation = psiClass.annotations.single()
     return IntelliJAnnotation(project, psiAnnotation)
   }
+
+    companion object {}
+    private val PROJECT_DESCRIPTOR = object : ProjectDescriptor(LanguageLevel.HIGHEST) {
+        override fun getSdk() : Sdk {
+            return InternalJdk.instance
+        }
+    }
 }
